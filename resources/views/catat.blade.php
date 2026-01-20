@@ -226,9 +226,11 @@
             transform: translateY(1px);
         }
         .save-draft:hover { transform: translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,0.08); }
-        .bulk-list { margin-top:16px; display:grid; grid-auto-flow: column; grid-template-rows: repeat(3, auto); grid-auto-columns: 420px; gap:10px; align-content:start; overflow-x:auto; overflow-y:hidden; padding-bottom:6px; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; width:100%; overscroll-behavior-x: contain; touch-action: pan-x; cursor: grab; user-select: none; }
+        .save-draft.cancel-edit { color:#fff; background: linear-gradient(135deg,#ef4444,#b91c1c); border-left: none; }
+        .save-draft.cancel-edit:hover { transform: translateY(-1px); box-shadow:0 10px 22px rgba(185,28,28,0.25); }
+        .bulk-list { margin-top:16px; display:flex; flex-direction:column; gap:10px; align-content:start; overflow-x:hidden; overflow-y:auto; padding-bottom:6px; -webkit-overflow-scrolling:touch; width:100%; overscroll-behavior-y: contain; touch-action: pan-y; scroll-behavior:smooth; user-select: none; max-height: calc(56px * 5 + 10px * 4 + 6px); }
         .bulk-list.dragging { cursor: grabbing; }
-        .bulk-list::-webkit-scrollbar { height:6px; }
+        .bulk-list::-webkit-scrollbar { width:6px; }
         .bulk-list::-webkit-scrollbar-track { background: transparent; }
         .bulk-list::-webkit-scrollbar-thumb { background: linear-gradient(90deg, rgba(6,182,212,0.35), rgba(8,145,178,0.55)); border-radius: 999px; }
         .bulk-list::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, rgba(6,182,212,0.6), rgba(8,145,178,0.8)); }
@@ -238,17 +240,21 @@
         .bulk-clear, .bulk-cancel { background:#f1f5f9; border:none; border-radius:10px; padding:8px 10px; font-weight:800; color:#64748b; box-shadow:0 4px 12px rgba(0,0,0,0.06); cursor:pointer; }
         .bulk-clear:hover { color:#ef4444; }
         .bulk-cancel:hover { color:#0ea5e9; }
-        .bulk-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0; white-space:nowrap; min-width:420px; width:100%; overflow:hidden; scroll-snap-align:start; }
+        .bulk-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0; width:100%; overflow:visible; scroll-snap-align:start; position:relative; min-height:56px; }
         .bulk-item.editing { background:#ecfeff; border-color:#0ea5e9; box-shadow:0 8px 18px rgba(14,165,233,0.2); }
-        .bulk-item-main { display:inline-flex; align-items:center; gap:12px; white-space:nowrap; }
+        .bulk-item-main { display:inline-flex; align-items:center; gap:12px; flex:1 1 auto; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; padding-right:56px; padding-bottom:4px; }
+        .bulk-item-main::-webkit-scrollbar { height:4px; }
+        .bulk-item-main::-webkit-scrollbar-track { background: transparent; }
+        .bulk-item-main::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.4); border-radius: 999px; }
         .bulk-type { font-size:.75rem; font-weight:700; padding:4px 8px; border-radius:999px; }
         .bulk-type.income { background:#ecfeff; color:#0ea5e9; border:1px solid #bae6fd; }
         .bulk-type.expense { background:#fee2e2; color:#ef4444; border:1px solid #fecaca; }
         .bulk-amount { font-weight:800; color:#0f172a; }
         .bulk-meta { font-size:.8rem; color:#64748b; white-space:nowrap; }
-        .bulk-actions { display:inline-flex; align-items:center; gap:8px; }
-        .bulk-remove { background:#fee2e2; border:1px solid #fecaca; border-radius:999px; width:36px; height:36px; color:#ef4444; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(239,68,68,0.15); }
-        .bulk-remove:hover { background:#fca5a5; border-color:#fca5a5; }
+        .bulk-desc { font-size:.8rem; color:#475569; background:#fff7ed; border:1px solid #fde68a; padding:4px 8px; border-radius:999px; white-space:nowrap; }
+        .bulk-actions { display:inline-flex; align-items:center; gap:8px; flex-shrink:0; position:absolute; right:12px; top:50%; transform: translateY(-50%); z-index:2; }
+        .bulk-remove { background:#fee2e2; border:1px solid #fecaca; border-radius:999px; width:40px; height:40px; color:#ef4444; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(239,68,68,0.18); transition:transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease; }
+        .bulk-remove:hover { background:#fca5a5; border-color:#fca5a5; transform: translateY(-1px); box-shadow:0 10px 22px rgba(239,68,68,0.22); }
         .bulk-remove i { font-size:1rem; }
 
         /* Custom Dropdown */
@@ -468,7 +474,7 @@
                 </div>
 
                 <div class="save-split">
-                    <button class="save-primary" type="submit"><i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Transaksi</button>
+                    <button class="save-primary" type="submit"><i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Trans</button>
                     <button type="button" class="save-draft" id="btn-add-bulk"><i class="fa-solid fa-layer-group"></i> Simpan Draf</button>
                 </div>
                 <div id="bulk-toolbar" class="bulk-toolbar" style="display:none">
@@ -541,20 +547,43 @@
     </div>
 
     <script>
-        // Initialize categories from localStorage or use defaults
+        // Kategori: income tetap lokal, expense dari database (budgets)
         let categories = {
-            income: JSON.parse(localStorage.getItem('incomeCategories')) || [
-                'Gaji', 'Bonus', 'Investasi', 'Hadiah', 'Lainnya'
-            ],
-            expense: JSON.parse(localStorage.getItem('expenseCategories')) || [
-                'Makanan', 'Transportasi', 'Belanja', 'Hiburan', 'Tagihan'
-            ]
+            income: JSON.parse(localStorage.getItem('incomeCategories')) || [],
+            expense: []
         };
-
-        // Save categories to localStorage
-        function saveCategories() {
+        function saveIncomeCategories() {
             localStorage.setItem('incomeCategories', JSON.stringify(categories.income));
-            localStorage.setItem('expenseCategories', JSON.stringify(categories.expense));
+        }
+        async function fetchExpenseCategoriesFromDB() {
+            try {
+                const res = await fetch('/transactions/budgets');
+                const json = await res.json();
+                const budgets = json && json.budgets ? json.budgets : {};
+                categories.expense = Object.keys(budgets);
+            } catch (e) {
+                categories.expense = [];
+            }
+        }
+        async function addExpenseCategoryToDB(label) {
+            try {
+                await fetch('/transactions/budgets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify({ label: label, max_amount: 0, action: 'create' })
+                });
+                await fetchExpenseCategoriesFromDB();
+            } catch (e) {}
+        }
+        async function deleteExpenseCategoryFromDB(label) {
+            try {
+                await fetch('/transactions/budgets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify({ label: label, action: 'delete' })
+                });
+                await fetchExpenseCategoriesFromDB();
+            } catch (e) {}
         }
 
         // DOM elements
@@ -584,6 +613,48 @@
         const initialBalance = {{ isset($availableBalance) ? (int) $availableBalance : 0 }};
         let bulkItems = [];
         let editingIndex = null;
+        const USER_ID = {{ Auth::id() }};
+        const DRAFT_KEY = 'catatDrafts:' + USER_ID;
+        function loadDrafts() {
+            try {
+                const raw = localStorage.getItem(DRAFT_KEY) || '[]';
+                const arr = JSON.parse(raw);
+                if (Array.isArray(arr)) {
+                    bulkItems = arr.filter(function (it) {
+                        return it && (it.type === 'income' || it.type === 'expense') && typeof it.amount !== 'undefined' && typeof it.category === 'string' && typeof it.date === 'string';
+                    }).map(function (it) {
+                        return {
+                            type: it.type === 'income' ? 'income' : 'expense',
+                            amount: Number(it.amount || 0),
+                            category: String(it.category || ''),
+                            date: String(it.date || '{{ now()->toDateString() }}'),
+                            description: it.description ? String(it.description) : null
+                        };
+                    });
+                } else {
+                    bulkItems = [];
+                }
+            } catch (e) {
+                bulkItems = [];
+            }
+        }
+        function saveDrafts() {
+            try {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(bulkItems));
+            } catch (e) {}
+        }
+        function updateDraftButton() {
+            if (!btnAddBulk) return;
+            if (editingIndex !== null) {
+                btnAddBulk.classList.add('cancel-edit');
+                btnAddBulk.setAttribute('data-mode', 'cancel');
+                btnAddBulk.innerHTML = '<i class="fa-solid fa-ban"></i> Batal Edit';
+            } else {
+                btnAddBulk.classList.remove('cancel-edit');
+                btnAddBulk.setAttribute('data-mode', 'add');
+                btnAddBulk.innerHTML = '<i class="fa-solid fa-layer-group"></i> Simpan Draf';
+            }
+        }
         function enableDragScroll(el) {
             if (!el) return;
             let isDown = false;
@@ -698,12 +769,20 @@
                 });
 
                 // Add click event to delete category
-                option.querySelector('.delete-icon').addEventListener('click', (e) => {
+                option.querySelector('.delete-icon').addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    deleteCategory(type, index);
+                    // hapus langsung tanpa modal konfirmasi terpisah
+                    if (type === 'expense') {
+                        await deleteExpenseCategoryFromDB(categories.expense[index]);
+                    } else {
+                        deleteCategory(type, index);
+                        saveIncomeCategories();
+                    }
+                    updateCategoryOptions(type);
                 });
 
                 categoryOptions.appendChild(option);
+
             });
 
             // Add "Add Category" option
@@ -724,40 +803,31 @@
 
         // Delete category
         function deleteCategory(type, index) {
-            // Store category data to be deleted
-            categoryToDelete = {
-                type: type,
-                index: index
-            };
-
-            // Display category name in modal
+            categoryToDelete = { type: type, index: index };
             deleteCategoryName.textContent = categories[type][index];
-
-            // Show confirmation modal
             deleteCategoryModal.classList.add('show');
         }
 
         // Execute category deletion
         function executeDeleteCategory() {
             if (categoryToDelete.index !== -1) {
-                categories[categoryToDelete.type].splice(categoryToDelete.index, 1);
-                saveCategories();
-                updateCategoryOptions(categoryToDelete.type);
-
-                // Reset category selection if the deleted category was selected
-                if (categoryValue.value === categories[categoryToDelete.type][categoryToDelete.index]) {
+                const type = categoryToDelete.type;
+                const label = categories[type][categoryToDelete.index];
+                if (type === 'expense') {
+                    deleteExpenseCategoryFromDB(label).then(() => {
+                        updateCategoryOptions(type);
+                    });
+                } else {
+                    categories[type].splice(categoryToDelete.index, 1);
+                    saveIncomeCategories();
+                    updateCategoryOptions(type);
+                }
+                if (categoryValue.value === label) {
                     categoryText.textContent = 'Pilih Kategori';
                     categoryValue.value = '';
                 }
-
-                // Reset category data to be deleted
-                categoryToDelete = {
-                    type: '',
-                    index: -1
-                };
+                categoryToDelete = { type: '', index: -1 };
             }
-
-            // Hide modal
             deleteCategoryModal.classList.remove('show');
         }
 
@@ -775,15 +845,22 @@
         }
 
         // Add new category
-        function addNewCategory() {
+        async function addNewCategory() {
             const newCategory = newCategoryInput.value.trim();
             if (newCategory) {
                 const type = typeInput.value;
-                categories[type].push(newCategory);
-                saveCategories();
-                updateCategoryOptions(type);
-                selectCategory(newCategory);
-                hideAddCategoryModal();
+                if (type === 'expense') {
+                    await addExpenseCategoryToDB(newCategory);
+                    updateCategoryOptions(type);
+                    selectCategory(newCategory);
+                    hideAddCategoryModal();
+                } else {
+                    categories[type].push(newCategory);
+                    saveIncomeCategories();
+                    updateCategoryOptions(type);
+                    selectCategory(newCategory);
+                    hideAddCategoryModal();
+                }
             }
         }
 
@@ -880,8 +957,14 @@
         }
 
         // Initialize
-        setType('expense');
+        (async () => {
+            await fetchExpenseCategoriesFromDB();
+            setType('expense');
+        })();
         enableDragScroll(bulkListEl);
+        updateDraftButton();
+        loadDrafts();
+        renderBulkList();
         if (balanceWarningClose && balanceWarningModal) {
             balanceWarningClose.addEventListener('click', function() {
                 balanceWarningModal.classList.remove('show');
@@ -896,6 +979,21 @@
         function formatRupiah(n) {
             const x = Number(n || 0);
             return x.toLocaleString('id-ID');
+        }
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        function truncateWords(str, max) {
+            if (!str) return '';
+            const words = String(str).trim().split(/\s+/);
+            if (words.length <= max) return str;
+            return words.slice(0, max).join(' ') + '…';
         }
 
         function resetFormFields() {
@@ -940,8 +1038,9 @@
             if (editingIndex === null || editingIndex < 0 || editingIndex >= bulkItems.length) {
                 editingIndex = null;
                 if (btnSavePrimary) {
-                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Transaksi';
+                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Trans';
                 }
+                updateDraftButton();
                 return;
             }
             const it = bulkItems[editingIndex];
@@ -965,6 +1064,7 @@
             if (btnSavePrimary) {
                 btnSavePrimary.innerHTML = '<i class="fa-solid fa-pen-to-square" style="margin-right: 8px"></i> Simpan Edit';
             }
+            updateDraftButton();
             renderBulkList();
         }
 
@@ -977,8 +1077,9 @@
                 transactionForm.removeAttribute('data-bulk');
                 transactionForm.noValidate = false;
                 if (btnSavePrimary) {
-                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Transaksi';
+                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Trans';
                 }
+                updateDraftButton();
                 return;
             }
             bulkListEl.style.display = '';
@@ -995,7 +1096,8 @@
                 label.innerHTML = `
                     <span class="bulk-type ${typeClass}">${it.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
                     <span class="bulk-amount">Rp ${formatRupiah(it.amount)}</span>
-                    <span class="bulk-meta">${it.category} · ${it.date}</span>
+                    <span class="bulk-meta">${escapeHtml(it.category)} · ${escapeHtml(it.date)}</span>
+                    ${it.description ? `<span class="bulk-desc">${escapeHtml(truncateWords(it.description, 20))}</span>` : ''}
                 `;
                 label.addEventListener('click', function() {
                     setEditing(idx);
@@ -1013,10 +1115,12 @@
                         editingIndex = null;
                         resetFormFields();
                         if (btnSavePrimary) {
-                            btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Transaksi';
+                            btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Trans';
                         }
+                        updateDraftButton();
                     }
                     renderBulkList();
+                    saveDrafts();
                 });
                 actions.appendChild(rm);
                 div.appendChild(label);
@@ -1026,6 +1130,16 @@
         }
 
         btnAddBulk.addEventListener('click', function() {
+            if (btnAddBulk.getAttribute('data-mode') === 'cancel' && editingIndex !== null) {
+                editingIndex = null;
+                if (btnSavePrimary) {
+                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Trans';
+                }
+                resetFormFields();
+                updateDraftButton();
+                renderBulkList();
+                return;
+            }
             const amountValue = amountInput.value.replace(/\D/g, '');
             if (!amountValue || !categoryValue.value || !dateInput.value) {
                 categoryOptions.classList.add('show');
@@ -1046,6 +1160,7 @@
                 description: descInput.value || null
             });
             renderBulkList();
+            saveDrafts();
             amountInput.value = '';
             categoryValue.value = '';
             document.getElementById('category-text').innerHTML = '<i class="fa-solid fa-layer-group" style="color: var(--text-muted); flex-shrink: 0;"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85rem;">Pilih Kategori</span>';
@@ -1056,13 +1171,17 @@
             bulkItems = [];
             editingIndex = null;
             resetFormFields();
+            updateDraftButton();
             renderBulkList();
+            saveDrafts();
         });
         btnCancelBulk.addEventListener('click', function() {
             bulkItems = [];
             editingIndex = null;
             resetFormFields();
+            updateDraftButton();
             renderBulkList();
+            saveDrafts();
         });
 
         function submitBulkItems() {
@@ -1081,6 +1200,7 @@
             form.appendChild(payload);
             document.body.appendChild(form);
             loadingOverlay.classList.add('show');
+            try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
             form.submit();
         }
 
@@ -1109,10 +1229,12 @@
                 };
                 editingIndex = null;
                 if (btnSavePrimary) {
-                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Transaksi';
+                    btnSavePrimary.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px"></i> Simpan Trans';
                 }
                 resetFormFields();
+                updateDraftButton();
                 renderBulkList();
+                saveDrafts();
                 return;
             }
             if (bulkItems.length > 0) {

@@ -18,7 +18,7 @@ class TransactionController extends Controller
             return;
         }
 
-        $key = 'pending_transactions:' . $userId;
+        $key = 'pending_transactions:'.$userId;
         $items = session()->get($key, []);
         if (! is_array($items) || $items === []) {
             return;
@@ -35,6 +35,7 @@ class TransactionController extends Controller
             $rawDate = $it['date'] ?? null;
             if (! $rawDate) {
                 $keep[] = $it;
+
                 continue;
             }
 
@@ -42,17 +43,20 @@ class TransactionController extends Controller
                 $date = Carbon::parse($rawDate)->startOfDay();
             } catch (\Throwable $e) {
                 $keep[] = $it;
+
                 continue;
             }
 
             if ($date->greaterThan($today)) {
                 $keep[] = $it;
+
                 continue;
             }
 
             $type = $it['type'] ?? null;
             if (! in_array($type, ['income', 'expense'], true)) {
                 $keep[] = $it;
+
                 continue;
             }
 
@@ -62,6 +66,7 @@ class TransactionController extends Controller
             }
             if (! is_numeric($amount) || (float) $amount < 0) {
                 $keep[] = $it;
+
                 continue;
             }
 
@@ -197,25 +202,15 @@ class TransactionController extends Controller
             ->distinct()
             ->orderBy('category')
             ->pluck('category')
-            ->map(fn($v) => (string) $v)
+            ->map(fn ($v) => (string) $v)
             ->all();
 
-        $allCategories = collect(array_unique(array_merge(array_keys($budgetByCategory), array_keys($currSpentMap), $distinctCategories)))
-            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+        $allCategories = collect(array_unique(array_merge(array_keys($budgetByCategory), array_keys($currSpentMap))))
+            ->filter(fn ($v) => is_string($v) && trim($v) !== '')
             ->values()
             ->all();
 
-        $palette = [
-            'Makanan' => 'rgb(255, 99, 132)',
-            'Transportasi' => 'rgb(255, 159, 64)',
-            'Hiburan' => 'rgb(255, 205, 86)',
-            'Tagihan' => 'rgb(75, 192, 192)',
-            'Lainnya' => 'rgb(54, 162, 235)',
-        ];
-        $colorForLabel = function (string $label) use ($palette): string {
-            if (isset($palette[$label])) {
-                return $palette[$label];
-            }
+        $colorForLabel = function (string $label): string {
             $h = 0;
             $len = strlen($label);
             for ($i = 0; $i < $len; $i++) {
@@ -253,6 +248,14 @@ class TransactionController extends Controller
                 $icon = 'fa-file-invoice-dollar';
             } elseif (Str::contains($needle, ['belanja', 'shopping'])) {
                 $icon = 'fa-bag-shopping';
+            } elseif (Str::contains($needle, ['spp', 'sekolah', 'pendidikan', 'kampus'])) {
+                $icon = 'fa-graduation-cap';
+            } elseif (Str::contains($needle, ['kesehatan', 'dokter', 'obat', 'rumah sakit'])) {
+                $icon = 'fa-briefcase-medical';
+            } elseif (Str::contains($needle, ['donasi', 'amal', 'zakat'])) {
+                $icon = 'fa-hand-holding-heart';
+            } elseif (Str::contains($needle, ['utang', 'pinjam', 'kredit'])) {
+                $icon = 'fa-money-bill-transfer';
             }
 
             $categoryItems[] = [
@@ -269,6 +272,12 @@ class TransactionController extends Controller
         }
 
         usort($categoryItems, function ($a, $b) {
+            $aUn = ((int) ($a['max'] ?? 0) <= 0) ? 1 : 0;
+            $bUn = ((int) ($b['max'] ?? 0) <= 0) ? 1 : 0;
+            if ($aUn !== $bUn) {
+                return $bUn <=> $aUn;
+            }
+
             return $b['spent'] <=> $a['spent'];
         });
 
@@ -292,11 +301,11 @@ class TransactionController extends Controller
         ];
 
         $periodLabel = $period === 'custom'
-            ? ($s->format('d/m/Y') . ' - ' . $e->format('d/m/Y'))
-            : ($period === 'week' ? 'Minggu Ini' : (($months[(int) $s->month] ?? $s->format('F')) . ' ' . $s->year));
+            ? ($s->format('d/m/Y').' - '.$e->format('d/m/Y'))
+            : ($period === 'week' ? 'Minggu Ini' : (($months[(int) $s->month] ?? $s->format('F')).' '.$s->year));
         $prevLabel = $period === 'custom'
-            ? ($ps->format('d/m/Y') . ' - ' . $pe->format('d/m/Y'))
-            : ($period === 'week' ? 'Minggu Lalu' : (($months[(int) $ps->month] ?? $ps->format('F')) . ' ' . $ps->year));
+            ? ($ps->format('d/m/Y').' - '.$pe->format('d/m/Y'))
+            : ($period === 'week' ? 'Minggu Lalu' : (($months[(int) $ps->month] ?? $ps->format('F')).' '.$ps->year));
 
         return view('budget', [
             'filters' => [
@@ -370,7 +379,7 @@ class TransactionController extends Controller
         $today = now()->startOfDay();
 
         if ($entryDate->greaterThan($today)) {
-            $key = 'pending_transactions:' . $data['user_id'];
+            $key = 'pending_transactions:'.$data['user_id'];
             $pending = session()->get($key, []);
             $pending[] = [
                 'id' => (string) Str::uuid(),
@@ -387,6 +396,7 @@ class TransactionController extends Controller
         }
 
         Transaction::create($data);
+
         return redirect()->route('dashboard')->with('transaction_saved', true);
     }
 
@@ -440,7 +450,7 @@ class TransactionController extends Controller
         }
 
         $today = now()->startOfDay();
-        $pendingKey = 'pending_transactions:' . $userId;
+        $pendingKey = 'pending_transactions:'.$userId;
         $pending = session()->get($pendingKey, []);
 
         foreach ($items as $it) {
@@ -478,6 +488,7 @@ class TransactionController extends Controller
                     'description' => $description,
                     'created_at' => now()->toDateTimeString(),
                 ];
+
                 continue;
             }
 
@@ -595,14 +606,15 @@ class TransactionController extends Controller
                 $data = [];
                 $sum = 0.0;
                 foreach ($dates as $d) {
-                    $inc = isset($incomes[$d]) ? (float)$incomes[$d]->total : 0.0;
-                    $exp = isset($expenses[$d]) ? (float)$expenses[$d]->total : 0.0;
+                    $inc = isset($incomes[$d]) ? (float) $incomes[$d]->total : 0.0;
+                    $exp = isset($expenses[$d]) ? (float) $expenses[$d]->total : 0.0;
                     $net = $inc - $exp;
                     // $sum += $net; // Removed cumulative for daily consistency
 
                     $labels[] = \Carbon\Carbon::parse($d)->day;
                     $data[] = $net;
                 }
+
                 // Re-index labels/data to match frontend expectations (though frontend uses map)
                 // But wait, existing code returns sequential arrays.
                 return response()->json(['labels' => array_values($labels), 'data' => array_values($data)]);
@@ -650,10 +662,11 @@ class TransactionController extends Controller
                 $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
                 for ($m = 1; $m <= 12; $m++) {
                     $labels[] = $months[$m - 1];
-                    $inc = isset($incomes[$m]) ? (float)$incomes[$m]->total : 0.0;
-                    $exp = isset($expenses[$m]) ? (float)$expenses[$m]->total : 0.0;
+                    $inc = isset($incomes[$m]) ? (float) $incomes[$m]->total : 0.0;
+                    $exp = isset($expenses[$m]) ? (float) $expenses[$m]->total : 0.0;
                     $data[] = $inc - $exp;
                 }
+
                 return response()->json(['labels' => $labels, 'data' => $data]);
             }
 
@@ -699,11 +712,12 @@ class TransactionController extends Controller
             $labels = [];
             $data = [];
             foreach ($years as $y) {
-                $labels[] = (string)$y;
-                $inc = isset($incomes[$y]) ? (float)$incomes[$y]->total : 0.0;
-                $exp = isset($expenses[$y]) ? (float)$expenses[$y]->total : 0.0;
+                $labels[] = (string) $y;
+                $inc = isset($incomes[$y]) ? (float) $incomes[$y]->total : 0.0;
+                $exp = isset($expenses[$y]) ? (float) $expenses[$y]->total : 0.0;
                 $data[] = $inc - $exp;
             }
+
             return response()->json(['labels' => array_values($labels), 'data' => array_values($data)]);
         }
 
@@ -748,22 +762,25 @@ class TransactionController extends Controller
 
         $rows = $q->groupBy('c')->orderByDesc('total')->get();
 
-        $palette = [
-            'Makanan' => 'rgb(255, 99, 132)',
-            'Transportasi' => 'rgb(255, 159, 64)',
-            'Hiburan' => 'rgb(255, 205, 86)',
-            'Tagihan' => 'rgb(75, 192, 192)',
-            'Lainnya' => 'rgb(54, 162, 235)',
-        ];
-        $colorForLabel = function (string $label) use ($palette): string {
-            if (isset($palette[$label])) {
-                return $palette[$label];
-            }
+        $budgetLabels = ExpenseBudget::where('user_id', $userId)->pluck('label')->map(function ($v) {
+            return (string) $v;
+        })->all();
+        $existing = [];
+        foreach ($rows as $r) {
+            $existing[] = (string) $r->c;
+        }
+        $missing = array_values(array_diff($budgetLabels, $existing));
+        foreach ($missing as $lbl) {
+            $rows->push((object) ['c' => (string) $lbl, 'total' => 0.0]);
+        }
+
+        $colorForLabel = function (string $label): string {
             $h = 0;
             $len = strlen($label);
             for ($i = 0; $i < $len; $i++) {
                 $h = ($h * 31 + ord($label[$i])) % 360;
             }
+
             return "hsl($h, 70%, 55%)";
         };
 
@@ -791,6 +808,14 @@ class TransactionController extends Controller
                 $icon = 'fa-file-invoice-dollar';
             } elseif (Str::contains($needle, ['belanja', 'shopping'])) {
                 $icon = 'fa-bag-shopping';
+            } elseif (Str::contains($needle, ['spp', 'sekolah', 'pendidikan', 'kampus'])) {
+                $icon = 'fa-graduation-cap';
+            } elseif (Str::contains($needle, ['kesehatan', 'dokter', 'obat', 'rumah sakit'])) {
+                $icon = 'fa-briefcase-medical';
+            } elseif (Str::contains($needle, ['donasi', 'amal', 'zakat'])) {
+                $icon = 'fa-hand-holding-heart';
+            } elseif (Str::contains($needle, ['utang', 'pinjam', 'kredit'])) {
+                $icon = 'fa-money-bill-transfer';
             }
             $icons[] = $icon;
             $colors[] = $colorForLabel($label);
@@ -828,15 +853,17 @@ class TransactionController extends Controller
         $data = $request->validate([
             'label' => ['required', 'string', 'max:255'],
             'max_amount' => ['nullable', 'integer', 'min:0'],
+            'action' => ['nullable', 'string', 'in:create,update,delete'],
         ]);
-        $max = $data['max_amount'] ?? 0;
-        if ($max > 0) {
+        $max = (int) ($data['max_amount'] ?? 0);
+        $action = $data['action'] ?? null;
+        if ($action === 'delete' || $max <= 0) {
+            ExpenseBudget::where('user_id', $userId)->where('label', $data['label'])->delete();
+        } else {
             ExpenseBudget::updateOrCreate(
                 ['user_id' => $userId, 'label' => $data['label']],
                 ['max_amount' => $max]
             );
-        } else {
-            ExpenseBudget::where('user_id', $userId)->where('label', $data['label'])->delete();
         }
 
         return response()->json(['ok' => true]);
@@ -909,7 +936,7 @@ class TransactionController extends Controller
     {
         $this->flushPendingDue();
         $userId = Auth::id();
-        $key = 'pending_transactions:' . $userId;
+        $key = 'pending_transactions:'.$userId;
         $items = session()->get($key, []);
 
         usort($items, function ($a, $b) {
@@ -918,6 +945,7 @@ class TransactionController extends Controller
             if ($da === $db) {
                 return strcmp($b['created_at'] ?? '', $a['created_at'] ?? '');
             }
+
             return strcmp($db, $da);
         });
 
@@ -927,7 +955,7 @@ class TransactionController extends Controller
     public function pendingUpdate(Request $request, string $id)
     {
         $userId = Auth::id();
-        $key = 'pending_transactions:' . $userId;
+        $key = 'pending_transactions:'.$userId;
         $items = session()->get($key, []);
         $data = $request->validate([
             'type' => ['required', 'in:income,expense'],
@@ -952,13 +980,14 @@ class TransactionController extends Controller
         if ($updated) {
             session()->put($key, $items);
         }
+
         return redirect()->route('pending.index');
     }
 
     public function pendingDelete(Request $request, string $id)
     {
         $userId = Auth::id();
-        $key = 'pending_transactions:' . $userId;
+        $key = 'pending_transactions:'.$userId;
         $items = session()->get($key, []);
         $filtered = [];
         foreach ($items as $it) {
@@ -967,6 +996,7 @@ class TransactionController extends Controller
             }
         }
         session()->put($key, $filtered);
+
         return redirect()->route('pending.index');
     }
 }

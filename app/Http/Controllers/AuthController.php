@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
 use App\Models\ExpenseBudget;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -53,9 +53,10 @@ class AuthController extends Controller
 
         // Redirect ke halaman yang dituju setelah login
         if ($user->level === 'administrator') {
-            return redirect()->intended('/admin');
+            return redirect('/admin');
         }
-        return redirect()->intended('/dashboard');
+
+        return redirect('/dashboard');
     }
 
     public function showRegister()
@@ -98,7 +99,7 @@ class AuthController extends Controller
 
         if ($userId) {
             User::where('id', $userId)->update(['last_seen' => null]);
-            Cache::forget('user-is-online-' . $userId);
+            Cache::forget('user-is-online-'.$userId);
         }
 
         Auth::logout();
@@ -162,7 +163,7 @@ class AuthController extends Controller
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
 
@@ -171,12 +172,12 @@ class AuthController extends Controller
 
         if ($request->hasFile('avatar')) {
             // Delete old avatar if exists
-            if ($user->avatar && file_exists(public_path('avatars/' . $user->avatar))) {
-                unlink(public_path('avatars/' . $user->avatar));
+            if ($user->avatar && file_exists(public_path('avatars/'.$user->avatar))) {
+                unlink(public_path('avatars/'.$user->avatar));
             }
 
             $image = $request->file('avatar');
-            $imageName = time() . '.' . $image->extension();
+            $imageName = time().'.'.$image->extension();
             $image->move(public_path('avatars'), $imageName);
             $user->avatar = $imageName;
         }

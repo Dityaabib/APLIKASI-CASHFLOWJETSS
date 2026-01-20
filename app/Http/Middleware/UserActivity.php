@@ -26,7 +26,7 @@ class UserActivity
             } catch (\Throwable $e) {
                 // ignore
             }
-            Cache::put('user-is-online-' . $userId, true, now()->addMinutes(5));
+            Cache::put('user-is-online-'.$userId, true, now()->addMinutes(5));
         }
 
         return $response;

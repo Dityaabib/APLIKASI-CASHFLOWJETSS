@@ -488,7 +488,7 @@
 
         .dist-layout {
             display: flex;
-            align-items: stretch;
+            align-items: center;
             gap: 20px;
             padding: 0 20px 16px 20px;
         }
@@ -502,6 +502,7 @@
             flex: 1;
             min-width: 240px;
             display: flex;
+            align-items: center;
         }
 
         .chart-wrap-3d {
@@ -919,6 +920,36 @@
             color: #3b82f6;
         }
 
+        .dist-all-btn {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background .18s ease, color .18s ease, border-color .18s ease;
+        }
+        .dist-all-btn:hover {
+            background: #f3f4f6;
+            border-color: #cfd3d8;
+            color: #111827;
+        }
+        .dist-all-btn .chip-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+            background: #e5e7eb;
+        }
+
         .amount-positive {
             color: #10b981;
             font-weight: 600;
@@ -1232,7 +1263,7 @@
                 <div class="distribution-header">
                     <div>
                         <h3 class="distribution-title">Distribusi Pengeluaran</h3>
-                        <p class="distribution-subtitle">Ringkasan 5 kategori pengeluaran terbesar</p>
+                        <p class="distribution-subtitle">Ringkasan semua kategori pengeluaran</p>
                     </div>
                     <div class="distribution-chip">Bulan ini</div>
                 </div>
@@ -3044,19 +3075,7 @@
                 return { h: Math.round(h*360), s: Math.round(s*100), l: Math.round(l*100) };
             }
 
-            const ALLOWED_CATEGORIES = ['Makanan','Transportasi','Hiburan','Tagihan','Lainnya'];
-            const CATEGORY_PALETTE = {
-                'Makanan': 'rgb(255, 99, 132)',
-                'Transportasi': 'rgb(255, 159, 64)',
-                'Hiburan': 'rgb(255, 205, 86)',
-                'Tagihan': 'rgb(75, 192, 192)',
-                'Lainnya': 'rgb(54, 162, 235)'
-            };
-            function baseColorFor(label) {
-                const rgb = CATEGORY_PALETTE[label];
-                if (rgb) return parseRgbToHsl(rgb);
-                return colorForLabel(label);
-            }
+            function baseColorFor(label) { return colorForLabel(label); }
 
             let distGradCache = new Map();
             let distGradW = null;
@@ -3223,10 +3242,10 @@
                     return { label: it.label, value: it.value, pct: total ? Math.round((it.value / total) * 100) : 0 };
                 }).sort(function(a, b) { return b.pct - a.pct; });
 
-                const MAX_PCT_ITEMS = 6;
-                const MAX_AMOUNT_ITEMS = 5;
+                const MAX_PCT_ITEMS = 4;
                 const topPctList = withPct.slice(0, MAX_PCT_ITEMS);
-                const topAmountList = withPct.slice(0, MAX_AMOUNT_ITEMS);
+                const remainingPctList = withPct.slice(MAX_PCT_ITEMS);
+                const topAmountList = withPct; // tampilkan semua nominal
 
                 topPctList.forEach(function(item) {
                     const label = item.label;
@@ -3256,6 +3275,18 @@
                     }
                 });
 
+                if (remainingPctList.length > 0 && percentContainer) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.type = 'button';
+                    toggleBtn.className = 'dist-all-btn';
+                    toggleBtn.style.marginTop = '10px';
+                    toggleBtn.innerHTML = '<span class="chip-icon"><i class="fa-solid fa-eye"></i></span><span>Lihat semua</span>';
+                    toggleBtn.addEventListener('click', function() {
+                        openDistAllModal(withPct);
+                    });
+                    percentContainer.appendChild(toggleBtn);
+                }
+
                 topAmountList.forEach(function(item) {
                     const label = item.label;
                     const value = item.value;
@@ -3279,6 +3310,8 @@
                         center.textContent = fmtIDR(value);
                     });
                 });
+
+                // tidak ada tombol "Lihat semua nominal"; semua item sudah ditampilkan
             }
 
             async function refreshHomeDistribution() {
@@ -3289,8 +3322,9 @@
                 const dist = await fetchDistribution(y, m);
                 const labels = dist.labels || [];
                 const totals = dist.totals || [];
+                const adjustedTotals = (totals || []).map(function(v){ return v > 0 ? v : 0.0001; });
                 homeDistChart.data.labels = labels;
-                homeDistChart.data.datasets[0].data = totals;
+                homeDistChart.data.datasets[0].data = adjustedTotals;
                 homeDistChart.update();
 
                 const totalExpense = (totals || []).reduce(function(a, b) { return a + b; }, 0);
@@ -3300,6 +3334,7 @@
             }
 
             const distCache = new Map();
+            function clearDistCache() { distCache.clear(); }
             async function fetchDistribution(year, month) {
                 const key = `${year ?? ''}|${month ?? ''}`;
                 if (distCache.has(key)) return distCache.get(key);
@@ -3331,7 +3366,7 @@
                 if (!container) return;
                 container.innerHTML = '';
 
-                const count = Math.min(labels.length, 5);
+                const count = labels.length;
                 for (let i = 0; i < count; i++) {
                     const label = labels[i];
                     const total = totals[i] || 0;
@@ -3488,10 +3523,69 @@
             }
 
             const currentYear = new Date().getFullYear();
+            const distAllModal = document.createElement('div');
+            distAllModal.id = 'distAllModal';
+            distAllModal.className = 'fade-modal';
+            document.body.appendChild(distAllModal);
+            distAllModal.addEventListener('click', (e) => { if (e.target === distAllModal) distAllModal.classList.remove('show'); });
+
+            function openDistAllModal(items) {
+                const total = items.reduce((a, b) => a + (b.value || 0), 0);
+                const listHtml = items.map(function(it){
+                    const label = it.label;
+                    const value = Number(it.value || 0);
+                    const pct = total ? Math.round((value / total) * 100) : 0;
+                    const base = baseColorFor(label);
+                    const dotColor = hsl(base.h, base.s, Math.max(0, Math.min(100, base.l + 15)));
+                    const pillBg = hsla({ h: base.h, s: base.s, l: Math.max(0, Math.min(100, base.l + 22)) }, 0.18);
+                    const pillBorder = hsla(base, 0.35);
+                    const pillText = hsl(base.h, base.s, Math.max(0, Math.min(100, base.l - 15)));
+                    return '' +
+                        '<div class="legend-item-3d" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">' +
+                            '<div class="legend-left-3d">' +
+                                '<div class="legend-color-3d" style="background-color:' + dotColor + ';box-shadow:0 0 0 2px rgba(0,0,0,0.03)"></div>' +
+                                '<div class="legend-label-3d">' + label + '</div>' +
+                            '</div>' +
+                            '<div class="legend-right-3d" style="display:flex;align-items:center;gap:10px">' +
+                                '<div class="legend-amount-3d">' + fmtIDR(value) + '</div>' +
+                                '<div class="legend-percent-3d" style="background:' + pillBg + ';border-color:' + pillBorder + ';color:' + pillText + '">' + pct + '%</div>' +
+                            '</div>' +
+                        '</div>';
+                }).join('');
+
+                distAllModal.innerHTML =
+                    '<div class="modal-card" style="max-width:460px;padding:18px 18px 14px 18px">' +
+                        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">' +
+                            '<div style="display:flex;align-items:center;gap:10px;font-weight:800;color:#374151">' +
+                                '<div style="width:36px;height:36px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;color:#6366f1">' +
+                                    '<i class="fa-solid fa-chart-pie"></i>' +
+                                '</div>' +
+                                '<div>Semua Kategori Pengeluaran</div>' +
+                            '</div>' +
+                            '<button id="distAllCloseX" class="action-btn" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#374151"><i class="fa-solid fa-xmark"></i></button>' +
+                        '</div>' +
+                        '<div class="modal-scroll" style="margin:6px 0 12px 0">' + listHtml + '</div>' +
+                        '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+                            '<button id="distAllClose" class="action-btn" style="background:white;border:1px solid #d1d5db;color:#374151;justify-content:center;padding:10px 12px;font-weight:600;border-radius:12px"><i class="fa-solid fa-check"></i> Tutup</button>' +
+                        '</div>' +
+                    '</div>';
+                distAllModal.classList.add('show');
+                const cx = distAllModal.querySelector('#distAllCloseX');
+                const cb = distAllModal.querySelector('#distAllClose');
+                if (cx) cx.addEventListener('click', () => { distAllModal.classList.remove('show'); });
+                if (cb) cb.addEventListener('click', () => { distAllModal.classList.remove('show'); });
+            }
+
             (async () => {
                 await fetchBudgets();
+                clearDistCache();
                 await renderDistributionGrid(currentYear);
                 await refreshHomeDistribution();
+                window.addEventListener('focus', async function() {
+                    clearDistCache();
+                    await renderDistributionGrid(currentYear);
+                    await refreshHomeDistribution();
+                }, { passive: true });
             })();
         }
     </script>

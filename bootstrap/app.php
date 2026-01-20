@@ -6,8 +6,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__ . '/../routes/web.php',
-        commands: __DIR__ . '/../routes/console.php',
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'redirect.auth.to.dashboard' => \App\Http\Middleware\RedirectAuthenticatedToDashboard::class,
             'admin' => \App\Http\Middleware\AdminOnly::class,
+            'regular' => \App\Http\Middleware\RegularOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

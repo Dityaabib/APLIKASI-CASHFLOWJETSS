@@ -18,9 +18,10 @@ class RedirectAuthenticatedToDashboard
     {
         if (Auth::check()) {
             if (Auth::user()->level === 'administrator') {
-                return redirect()->intended('/admin');
+                return redirect('/admin');
             }
-            return redirect()->intended('/dashboard');
+
+            return redirect('/dashboard');
         }
 
         return $next($request);

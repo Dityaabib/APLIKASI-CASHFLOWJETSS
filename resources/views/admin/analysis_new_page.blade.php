@@ -130,18 +130,41 @@
     </aside>
     <main class="main-content">
         @php
-    $categoryConfig = [
-        'Belanja' => ['color' => '#ec4899', 'icon' => 'fa-shopping-bag'],
-        'Transportasi' => ['color' => '#f59e0b', 'icon' => 'fa-car'],
-        'Utang' => ['color' => '#3b82f6', 'icon' => 'fa-wallet'],
-        'Makanan' => ['color' => '#ef4444', 'icon' => 'fa-utensils'],
-        'Hiburan' => ['color' => '#8b5cf6', 'icon' => 'fa-film'],
-        'Tagihan' => ['color' => '#10b981', 'icon' => 'fa-file-invoice-dollar'],
-        'Kesehatan' => ['color' => '#06b6d4', 'icon' => 'fa-briefcase-medical'],
-        'Pendidikan' => ['color' => '#f97316', 'icon' => 'fa-graduation-cap'],
-        'Lainnya' => ['color' => '#64748b', 'icon' => 'fa-ellipsis-h'],
-    ];
-    @endphp
+            $colorForLabel = function (string $label): string {
+                $h = 0;
+                $len = strlen($label);
+                for ($i = 0; $i < $len; $i++) {
+                    $h = ($h * 31 + ord($label[$i])) % 360;
+                }
+
+                return "hsl($h, 70%, 55%)";
+            };
+
+            $iconForLabel = function (string $label): string {
+                $needle = \Illuminate\Support\Str::lower($label);
+                if (\Illuminate\Support\Str::contains($needle, ['makan', 'minum', 'kuliner'])) {
+                    return 'fa-utensils';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['transport', 'bensin', 'ojek', 'bus', 'kereta'])) {
+                    return 'fa-car-side';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['hiburan', 'entertain', 'game', 'film'])) {
+                    return 'fa-ticket';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['tagihan', 'listrik', 'air', 'internet', 'cicilan'])) {
+                    return 'fa-file-invoice-dollar';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['belanja', 'shopping'])) {
+                    return 'fa-bag-shopping';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['spp', 'sekolah', 'pendidikan', 'kampus'])) {
+                    return 'fa-graduation-cap';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['kesehatan', 'dokter', 'obat', 'rumah sakit'])) {
+                    return 'fa-briefcase-medical';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['donasi', 'amal', 'zakat'])) {
+                    return 'fa-hand-holding-heart';
+                } elseif (\Illuminate\Support\Str::contains($needle, ['utang', 'pinjam', 'kredit'])) {
+                    return 'fa-money-bill-transfer';
+                }
+
+                return 'fa-wallet';
+            };
+        @endphp
     <div class="header">
             <div>
                 <h1>Analisis Pengguna</h1>
@@ -249,10 +272,12 @@
                         <div class="user-budget-sub">Terisi otomatis dari transaksi, dibandingkan dengan budget per kategori</div>
                         <div class="user-budget-list">
                             @foreach($u->analysis_budget_items as $item)
-                                @php($c = $categoryConfig[$item['label']] ?? ['color' => '#6366f1', 'icon' => 'fa-wallet'])
+                                @php($label = (string) ($item['label'] ?? ''))
+                                @php($color = $colorForLabel($label))
+                                @php($icon = $iconForLabel($label))
                                 <div class="user-budget-item">
-                                    <div class="user-budget-icon" style="background: {{ $c['color'] }}; box-shadow: 0 4px 10px {{ $c['color'] }}40;">
-                                        <i class="fas {{ $c['icon'] }}"></i>
+                                    <div class="user-budget-icon" style="background: {{ $color }}; box-shadow: 0 4px 10px {{ $color }}40;">
+                                        <i class="fas {{ $icon }}"></i>
                                     </div>
                                     <div class="user-budget-main">
                                         <div class="user-budget-name-row">
@@ -265,7 +290,7 @@
                                         </div>
                                         <div class="user-budget-bar-wrap">
                                             <div class="user-budget-bar-track">
-                                                <div class="user-budget-bar-fill" style="width: {{ (int) round($item['fillPercent'] ?? 0) }}%; background: {{ $c['color'] }};"></div>
+                                                <div class="user-budget-bar-fill" style="width: {{ (int) round($item['fillPercent'] ?? 0) }}%; background: {{ $color }};"></div>
                                                 <div class="user-budget-bar-center">
                                                     {{ (int) round($item['usagePercent'] ?? 0) }}% · Maks 1 bulan
                                                 </div>

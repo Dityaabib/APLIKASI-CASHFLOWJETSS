@@ -21,19 +21,21 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
 Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/online-count', [AdminController::class, 'onlineCount'])->name('admin.online.count');
+    Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/admin/admins/create', [AdminController::class, 'createAdmin'])->name('admin.admins.create');
+    Route::post('/admin/admins', [AdminController::class, 'storeAdmin'])->name('admin.admins.store');
+    Route::patch('/admin/admins/{user}', [AdminController::class, 'updateAdmin'])->name('admin.admins.update');
+    Route::get('/admin/users-transactions', [AdminController::class, 'userTransactions'])->name('admin.users.transactions');
+    Route::get('/admin/analysis', [AdminController::class, 'analysis'])->name('admin.analysis');
+    Route::get('/admin/analysis/halaman-baru', [AdminController::class, 'analysisNewPage'])->name('admin.analysis.new');
+    Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
+});
+
+Route::middleware(['auth', 'regular'])->group(function () {
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
-    Route::get('/admin', [AdminController::class, 'index'])->middleware('admin')->name('admin.dashboard');
-    Route::get('/admin/online-count', [AdminController::class, 'onlineCount'])->middleware('admin')->name('admin.online.count');
-    Route::get('/admin/users', [AdminController::class, 'users'])->middleware('admin')->name('admin.users');
-    Route::get('/admin/admins/create', [AdminController::class, 'createAdmin'])->middleware('admin')->name('admin.admins.create');
-    Route::post('/admin/admins', [AdminController::class, 'storeAdmin'])->middleware('admin')->name('admin.admins.store');
-    Route::patch('/admin/admins/{user}', [AdminController::class, 'updateAdmin'])->middleware('admin')->name('admin.admins.update');
-    Route::get('/admin/users-transactions', [AdminController::class, 'userTransactions'])->middleware('admin')->name('admin.users.transactions');
-    Route::get('/admin/analysis', [AdminController::class, 'analysis'])->middleware('admin')->name('admin.analysis');
-    Route::get('/admin/analysis/halaman-baru', [AdminController::class, 'analysisNewPage'])->middleware('admin')->name('admin.analysis.new');
-    Route::get('/admin/settings', [AdminController::class, 'settings'])->middleware('admin')->name('admin.settings');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/catat', [TransactionController::class, 'index'])->name('catat');
     Route::get('/budget', [TransactionController::class, 'budget'])->name('budget');
     Route::get('/transactions/all', [TransactionController::class, 'all'])->name('transactions.all');
@@ -53,4 +55,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pending', [TransactionController::class, 'pending'])->name('pending.index');
     Route::patch('/pending/{id}', [TransactionController::class, 'pendingUpdate'])->name('pending.update');
     Route::delete('/pending/{id}', [TransactionController::class, 'pendingDelete'])->name('pending.delete');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

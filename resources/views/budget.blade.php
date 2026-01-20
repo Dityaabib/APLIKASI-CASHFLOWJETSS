@@ -878,9 +878,19 @@
             background: rgba(255,255,255,0.75);
         }
 
+        .budget-item.unconfigured {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
         .theme-dark .budget-item {
             background: rgba(2,6,23,0.25);
             border-color: rgba(255,255,255,0.08);
+        }
+
+        .theme-dark .budget-item.unconfigured {
+            background: rgba(120,53,15,0.22);
+            border-color: rgba(251,191,36,0.25);
         }
 
         .budget-icon {
@@ -897,6 +907,12 @@
             );
             box-shadow: 0 10px 18px color-mix(in srgb, var(--bar-color) 30%, transparent 70%);
             grid-row: 1 / span 2;
+        }
+
+        .budget-item.unconfigured .budget-icon {
+            color: #7c2d12;
+            background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+            box-shadow: 0 10px 18px rgba(245, 158, 11, 0.28);
         }
 
         .budget-main { min-width: 0; }
@@ -975,6 +991,11 @@
             background: linear-gradient(90deg, color-mix(in srgb, var(--bar-color) 84%, #ffffff 16%) 0%, var(--bar-color) 100%);
             width: 0%;
             box-shadow: 0 10px 18px color-mix(in srgb, var(--bar-color) 26%, transparent 74%);
+        }
+
+        .budget-item.unconfigured .bar-fill {
+            background: linear-gradient(90deg, #fcd34d 0%, #f59e0b 100%);
+            box-shadow: 0 10px 18px rgba(245, 158, 11, 0.26);
         }
 
         .trend-up {
@@ -1660,6 +1681,7 @@
                 const barFillEl = el.querySelector('.bar-fill');
 
                 if (effectiveMax > 0) {
+                    el.classList.remove('unconfigured');
                     if (amountSepEl) amountSepEl.style.display = '';
                     if (amountMaxEl) {
                         amountMaxEl.style.display = '';
@@ -1682,19 +1704,20 @@
                         }
                     }
                 } else {
+                    el.classList.add('unconfigured');
                     if (amountSepEl) amountSepEl.style.display = 'none';
                     if (amountMaxEl) amountMaxEl.style.display = 'none';
                     const pct = spentTotal > 0 ? Math.round((spent / spentTotal) * 100) : 0;
                     const pctClamped = Math.max(0, Math.min(100, pct));
                     if (percentMainEl) {
-                        percentMainEl.setAttribute('data-mode', 'share');
-                        percentMainEl.textContent = pct + '% dari total';
+                        percentMainEl.setAttribute('data-mode', 'unconfigured');
+                        percentMainEl.textContent = 'Belum diatur';
                     }
                     if (barFillEl) barFillEl.style.width = pctClamped + '%';
 
                     const barLabel = el.querySelector('.bar-center-label');
                     if (barLabel) {
-                         barLabel.textContent = `${pct}% · Maks ${st.selected} bulan`;
+                         barLabel.textContent = `Belum diatur · Atur maksimal`;
                     }
                 }
             }

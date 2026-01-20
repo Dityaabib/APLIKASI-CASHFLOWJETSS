@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Transaction;
 use App\Models\ExpenseBudget;
+use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -22,25 +22,27 @@ class AdminController extends Controller
 
         // Administrator: Online dulu, lalu terbaru, ambil lebih banyak agar bisa scroll
         $recentAdmins = User::where('level', 'administrator')
-            ->orderByRaw("CASE WHEN last_seen >= ? THEN 1 ELSE 0 END DESC", [$onlineThreshold])
+            ->orderByRaw('CASE WHEN last_seen >= ? THEN 1 ELSE 0 END DESC', [$onlineThreshold])
             ->orderBy('created_at', 'desc')
             ->take(50)
             ->get();
         $recentAdmins->transform(function ($u) use ($onlineThreshold) {
             $last = $u->last_seen ? \Carbon\Carbon::parse($u->last_seen) : null;
             $u->is_online = $last ? $last->gte($onlineThreshold) : false;
+
             return $u;
         });
 
         // Regular Users: Sorted by Online Status (Online First) then Created At
         $recentUsers = User::where('level', '!=', 'administrator')
-            ->orderByRaw("CASE WHEN last_seen >= ? THEN 1 ELSE 0 END DESC", [$onlineThreshold])
+            ->orderByRaw('CASE WHEN last_seen >= ? THEN 1 ELSE 0 END DESC', [$onlineThreshold])
             ->orderBy('created_at', 'desc')
             ->take(50) // Increased limit to allow scrolling in dashboard
             ->get();
         $recentUsers->transform(function ($u) use ($onlineThreshold) {
             $last = $u->last_seen ? \Carbon\Carbon::parse($u->last_seen) : null;
             $u->is_online = $last ? $last->gte($onlineThreshold) : false;
+
             return $u;
         });
 
@@ -65,9 +67,9 @@ class AdminController extends Controller
 
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
-                $w->where('name', 'like', '%' . $q . '%')
-                    ->orWhere('username', 'like', '%' . $q . '%')
-                    ->orWhere('email', 'like', '%' . $q . '%');
+                $w->where('name', 'like', '%'.$q.'%')
+                    ->orWhere('username', 'like', '%'.$q.'%')
+                    ->orWhere('email', 'like', '%'.$q.'%');
             });
         }
 
@@ -85,6 +87,7 @@ class AdminController extends Controller
         $users->getCollection()->transform(function ($u) use ($onlineThreshold) {
             $last = $u->last_seen ? \Carbon\Carbon::parse($u->last_seen) : null;
             $u->is_online = $last ? $last->gte($onlineThreshold) : false;
+
             return $u;
         });
 
@@ -92,7 +95,7 @@ class AdminController extends Controller
             $items = [];
             foreach ($users->getCollection() as $u) {
                 $raw = trim(preg_replace('/\s+/u', ' ', (string) $u->name));
-                $display = mb_strlen($raw) > 23 ? (mb_substr($raw, 0, 10) . '…' . mb_substr($raw, -8)) : $raw;
+                $display = mb_strlen($raw) > 23 ? (mb_substr($raw, 0, 10).'…'.mb_substr($raw, -8)) : $raw;
                 $items[] = [
                     'id' => (int) $u->id,
                     'display_name' => $display,
@@ -102,9 +105,10 @@ class AdminController extends Controller
                     'is_online' => (bool) $u->is_online,
                     'created_human' => $u->created_at ? $u->created_at->diffForHumans(null, true) : '-',
                     'avatar' => $u->avatar,
-                    'avatar_url' => $u->avatar ? asset('avatars/' . $u->avatar) : null,
+                    'avatar_url' => $u->avatar ? asset('avatars/'.$u->avatar) : null,
                 ];
             }
+
             return response()->json([
                 'items' => $items,
                 'total' => $users->total(),
@@ -120,6 +124,7 @@ class AdminController extends Controller
         $count = User::where('level', '!=', 'administrator')
             ->where('last_seen', '>=', $onlineThreshold)
             ->count();
+
         return response()->json(['count' => $count]);
     }
 
@@ -290,6 +295,7 @@ class AdminController extends Controller
                 $u->analysis_income_percentage = $incomePercent;
                 $u->analysis_expense_percentage = $expensePercent;
                 $u->analysis_budget_items = $budgetItems;
+
                 return $u;
             });
         }
@@ -414,6 +420,7 @@ class AdminController extends Controller
                 $u->analysis_income_percentage = $incomePercent;
                 $u->analysis_expense_percentage = $expensePercent;
                 $u->analysis_budget_items = $budgetItems;
+
                 return $u;
             });
         }
@@ -437,9 +444,9 @@ class AdminController extends Controller
 
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
-                $w->where('name', 'like', '%' . $q . '%')
-                    ->orWhere('username', 'like', '%' . $q . '%')
-                    ->orWhere('email', 'like', '%' . $q . '%');
+                $w->where('name', 'like', '%'.$q.'%')
+                    ->orWhere('username', 'like', '%'.$q.'%')
+                    ->orWhere('email', 'like', '%'.$q.'%');
             });
         }
 
@@ -483,7 +490,7 @@ class AdminController extends Controller
             $items = [];
             foreach ($users->getCollection() as $u) {
                 $raw = trim(preg_replace('/\s+/u', ' ', (string) $u->name));
-                $display = mb_strlen($raw) > 24 ? (mb_substr($raw, 0, 12) . '…' . mb_substr($raw, -10)) : $raw;
+                $display = mb_strlen($raw) > 24 ? (mb_substr($raw, 0, 12).'…'.mb_substr($raw, -10)) : $raw;
 
                 $transactions = [];
                 foreach ($u->transactions as $t) {
@@ -502,7 +509,7 @@ class AdminController extends Controller
                     'sub' => $u->username ?? $u->email,
                     'is_online' => (bool) $u->is_online,
                     'avatar' => $u->avatar,
-                    'avatar_url' => $u->avatar ? asset('avatars/' . $u->avatar) : null,
+                    'avatar_url' => $u->avatar ? asset('avatars/'.$u->avatar) : null,
                     'created_human' => $u->created_at ? $u->created_at->diffForHumans(null, true) : '-',
                     'transactions' => $transactions,
                 ];
@@ -525,7 +532,7 @@ class AdminController extends Controller
         $onlineThreshold = now()->subMinutes(5);
 
         $admins = User::where('level', 'administrator')
-            ->orderByRaw("CASE WHEN last_seen >= ? THEN 1 ELSE 0 END DESC", [$onlineThreshold])
+            ->orderByRaw('CASE WHEN last_seen >= ? THEN 1 ELSE 0 END DESC', [$onlineThreshold])
             ->orderByDesc('created_at')
             ->take(50)
             ->get();
@@ -533,6 +540,7 @@ class AdminController extends Controller
         $admins->transform(function ($u) use ($onlineThreshold) {
             $last = $u->last_seen ? \Carbon\Carbon::parse($u->last_seen) : null;
             $u->is_online = $last ? $last->gte($onlineThreshold) : false;
+
             return $u;
         });
 
@@ -556,15 +564,15 @@ class AdminController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:50', 'unique:users,username,' . $user->id],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username,'.$user->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
         $user->name = $data['name'];
         $user->email = $data['email'];
         $user->username = $data['username'];
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $user->password = Hash::make($data['password']);
         }
         $user->save();
@@ -581,7 +589,7 @@ class AdminController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user = new User();
+        $user = new User;
         $user->name = $data['name'];
         $user->email = $data['email'];
         $user->username = $data['username'];
